@@ -223,7 +223,14 @@ namespace BetterExceptions.Services
                 try
                 {
                     Process.Start(Path.GetFullPath(htmlFile));
-                }catch { }
+                }catch (Exception ex)
+                {
+                    if(!ServiceManager.TryGetService(out ILogger logger))
+                        return;
+
+                    logger.Log("Exsausted all options to open the crash report HTML file!");
+                    logger.LogException(ex);
+                }
             }
         }
     }

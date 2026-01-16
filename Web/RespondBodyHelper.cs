@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 
-namespace BetterExceptions.Services
+namespace BetterExceptions.Web
 {
     public class RespondBodyHelper
     {

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <AllowunsafeBlocks>true</AllowunsafeBlocks>
     <TargetFrameworks>net472</TargetFrameworks>
   </PropertyGroup>
@@ -12,5 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MBEasyMod\MBEasyMod.csproj" />
+    <ProjectReference Include="..\NativeWindows\NativeWindows.Cross/NativeWindows.Cross.csproj" />
+    <ProjectReference Include="..\NativeWindows\NativeWindows.Win32/NativeWindows.Win32.csproj" />
   </ItemGroup>
 </Project>

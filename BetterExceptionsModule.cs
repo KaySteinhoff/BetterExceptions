@@ -4,6 +4,8 @@ using TaleWorlds.MountAndBlade;
 using BetterExceptions.Services;
 using BetterExceptions.Interfaces;
 using MBEasyMod.Notification;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace BetterExceptions
 {
@@ -31,10 +33,35 @@ namespace BetterExceptions
         {
             DebugManager.Instance.EnableDebugMode();
             DebugManager.Instance.UnhandledExceptionThrown += ExceptionThrown;
-            ServiceManager.RegisterService<IExceptionHandler, HTMLExceptionHandler>(new HTMLExceptionHandler());
             ServiceManager.RegisterService<ILogger, Logger>(new Logger());
 
-            if(ServiceManager.TryGetService(out ILogger logger))
+            ILogger logger = null;
+            ConfigManager configManager = new ConfigManager("../../Modules/BetterExceptions/ModuleData/config.dat");
+            try
+            {
+                configManager.ReadConfigs();
+            }catch
+            {
+                if(!ServiceManager.TryGetService(out logger))
+                    return;
+
+                logger.Log("Failed to read BetterExceptions config file! Default settings will be used!");
+                configManager.TrySetConfigValue("use_gui_handler", false);
+                if(!File.Exists("../../Modules/BetterExceptions/ModuleData/config.dat"))
+                {
+                    logger.Log("Creating default config file...");
+                    configManager.SaveConfigs();
+                }
+            }
+
+            ServiceManager.RegisterService<IConfigManager, ConfigManager>(configManager);
+            ServiceManager.RegisterService<IUpdateHandler, GithubUpdateHandler>(new GithubUpdateHandler());
+            if(configManager.TryGetConfigValue("use_gui_handler", out bool useGuiHandler) && useGuiHandler)
+                ServiceManager.RegisterService<IExceptionHandler, GUIExceptionHandler>(new GUIExceptionHandler());
+            else
+                ServiceManager.RegisterService<IExceptionHandler, HTMLExceptionHandler>(new HTMLExceptionHandler());
+
+            if(logger != null || ServiceManager.TryGetService(out logger))
                 logger.Log("BetterExceptions initialized");
             initialized = true;
         }
@@ -67,7 +94,7 @@ namespace BetterExceptions
             
             MBPopup.ShowSimplePopup(
                 "Update available", 
-                "A new version of BetterException is available! Do you wish to update?", 
+                "A new version of BetterExceptions is available! Do you wish to update?", 
                 "Update now", 
                 "Ignore", 
                 ()=>
@@ -77,7 +104,7 @@ namespace BetterExceptions
                         if(result.Result)
                             MBPopup.ShowSimpleNotificationPopup("Successfully installed!", "Newest version of BetterExceptions installed! Please restart your game to apply the updates.", "OK", ()=>{});
                         else
-                            MBPopup.ShowSimpleAlertPopup("Update failed!", "Failed to install wewest version of BetterExceptions!", "OK", ()=>{});
+                            MBPopup.ShowSimpleAlertPopup("Update failed!", "Failed to install newest version of BetterExceptions!", "OK", ()=>{});
                     });
                 },
                 ()=>{});
@@ -98,7 +125,7 @@ namespace BetterExceptions
                 ()=>{ abortInit = true; });
             }
 
-            CheckForUpdates();
+            //Task.Run(CheckForUpdates);
         }
 
         protected override void OnSubModuleUnloaded()
@@ -106,7 +133,19 @@ namespace BetterExceptions
             DebugManager.Instance.UnhandledExceptionThrown -= ExceptionThrown;
             DebugManager.Instance.DisableDebugMode();
 
-            if(ServiceManager.TryGetService(out ILogger logger))
+            ILogger logger = null;
+            if(ServiceManager.TryGetService(out IConfigManager configManager))
+            {
+                try
+                {
+                    configManager.SaveConfigs();
+                }catch(Exception e)
+                {
+                    if(ServiceManager.TryGetService(out logger))
+                        logger.LogException(e);
+                }
+            }
+            if(logger != null || ServiceManager.TryGetService(out logger))
             {
                 logger.Log($"BetterExceptions successfully terminated!");
                 logger.Dispose();
