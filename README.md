@@ -1,15 +1,15 @@
 # BetterExceptions
 
 A simple mod for Mount & Blade 2: Bannerlord.<br>
-It catches unhandled exceptions thrown by the game and reformats them into html files with all infos given by the exception.<br>
+It catches unhandled exceptions thrown by the game and them with all infos given by the exception.<br>
 Custom formatting isn't supported yet, however a sample template thruthfully showing the default formating is being provided with the compiled binaries.<br>
 <br>
 CrashReports will be stored in BetterExceptions/ModuleData/CrashReports after successfull installation.
 
 ## Building from source
 
-BetterExecutions depends upon <a href="https://www.github.com/KaySteinhoff/MBEasyMod">MBEasyMod</a>, a collection of helper classes that wrap frequently used functionality.<br>
-MBEasyMod is not available as a NuGet package meaning you'll have to pull it too and, depening on where you store them relative to one another, may need to adjust the reference path. After that you can just compile as normal.
+BetterExceptions depends upon <a href="https://www.github.com/KaySteinhoff/MBEasyMod">MBEasyMod</a> and <a href="https://www.github.com/KaySteinhoff/nativeWindows">NativeWindows</a>.<br>
+Both are not available as a NuGet packages meaning you'll have to pull them too and, depening on where you store them relative to one another, may need to adjust the reference paths. After that you can compile it just like any other Mount & Blade 2: Bannerlord mod.
 
 ## Installation
 

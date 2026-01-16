@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using BetterExceptions.Interfaces;
+using BetterExceptions.Web;
 
 namespace BetterExceptions.Services
 {
@@ -73,7 +74,7 @@ namespace BetterExceptions.Services
                 {
                     // Download zip
                     logger.Log($"Downloading zip file of version {version}...");
-                    RespondBodyHelper resp = new RespondBodyHelper($"https://github.com/KaySteinhoff/BetterExceptions/releases/download/{version}/MusicManager.zip");
+                    RespondBodyHelper resp = new RespondBodyHelper($"https://github.com/KaySteinhoff/BetterExceptions/releases/download/{version}/BetterExceptions.zip");
                     Stream target = File.Open($"{moduleFolder}{version}.zip", FileMode.Create);
                     byte[] data = resp.FetchBody(new KeyValuePair<string, string>[] { new KeyValuePair<string, string>("user-agent", "anything") });
                     target.Write(data, 0, data.Length);
@@ -84,7 +85,7 @@ namespace BetterExceptions.Services
                     ZipFile.ExtractToDirectory($"{moduleFolder}{version}.zip", moduleFolder + version);
                     // Replace existing files with downloaded files(keep old config file)
                     CopyDirectoryContent($"{moduleFolder}{version}/BetterExceptions/bin/Win64_Shipping_Client", $"{moduleFolder}/bin/Win64_Shipping_Client/", ".");
-                    CopyDirectoryContent($"{moduleFolder}{version}/BetterExceptions/Module_Data", $"{moduleFolder}/Module_Data/", "^(?!.+\\/?config\\.dat).+$");
+                    CopyDirectoryContent($"{moduleFolder}{version}/BetterExceptions/ModuleData", $"{moduleFolder}/Module_Data/", "^(?!.+\\/?config\\.dat).+$");
                     logger.Log("Files extracted! Cleaning up...");
 
                     // Clean up
@@ -105,8 +106,12 @@ namespace BetterExceptions.Services
         {
             string[] files = Directory.GetFiles(sourceDirectory);
             for (int i = 0; i < files.Length; ++i)
-                if (Regex.IsMatch(files[i], fileMatchRegex))
-                    File.Copy(files[i], destinationDirectory + Path.GetFileName(files[i]));
+            {
+                if (!Regex.IsMatch(files[i], fileMatchRegex))
+                    continue;
+
+                File.Copy(files[i], destinationDirectory + Path.GetFileName(files[i]), true);
+            }
         }
 
     }
