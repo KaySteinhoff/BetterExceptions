@@ -9,7 +9,7 @@ CrashReports will be stored in BetterExceptions/ModuleData/CrashReports after su
 ## Building from source
 
 BetterExceptions depends upon <a href="https://www.github.com/KaySteinhoff/MBEasyMod">MBEasyMod</a> and <a href="https://www.github.com/KaySteinhoff/nativeWindows">NativeWindows</a>.<br>
-Both are not available as a NuGet packages meaning you'll have to pull them too and, depening on where you store them relative to one another, may need to adjust the reference paths. After that you can compile it just like any other Mount & Blade 2: Bannerlord mod.
+Both are not available as NuGet packages meaning you'll have to pull them too and, depening on where you store them relative to one another, may need to adjust the reference paths. After that you can compile it just like any other Mount & Blade 2: Bannerlord mod.
 
 ## Installation
 
