@@ -8,12 +8,14 @@ using System.IO;
 using MBEasyMod.Services;
 using MBEasyMod.Interfaces;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace BetterExceptions
 {
 	public class BetterExceptionsModule : MBSubModuleBase
 	{
 		bool initialized = false;
+
 		protected override void OnSubModuleLoad()
 		{
 			try
@@ -28,11 +30,12 @@ namespace BetterExceptions
 				logger.LogException(ex);
 			}
 		}
+
 		private void Init()
 		{
 			DebugManager.Instance.EnableDebugMode();
 			DebugManager.Instance.UnhandledExceptionThrown += ExceptionThrown;
-			ServiceManager.RegisterService<ILogger, Logger>(new Logger());
+			ServiceManager.RegisterService<ILogger, Logger>(new Logger("../../Modules/BetterExceptions/ModuleData/Logs"));
 			ILogger logger = null;
 			ConfigManager configManager = new ConfigManager("../../Modules/BetterExceptions/ModuleData/config.dat");
 			GithubUpdateHandler updateHandler = new GithubUpdateHandler();
@@ -67,12 +70,15 @@ namespace BetterExceptions
 			initialized = true;
 			Task.Run(CleanUpTmpFiles);
 		}
+
 		private void ExceptionThrown(object sender, Exception e)
 		{
 			if(ServiceManager.TryGetService(out ILogger logger))
 				logger.Log($"Caught exception {e.GetType()}");
+
 			if(!ServiceManager.TryGetService(out IExceptionHandler exceptionHandler))
 				return;
+
 			try
 			{
 				exceptionHandler.HandleException(e);
@@ -81,6 +87,7 @@ namespace BetterExceptions
 				logger.LogException(ex);
 			}
 		}
+
 		private void CleanUpTmpFiles()
 		{
 			string[] tmpFiles = Directory.GetFiles("../../Modules/BetterExceptions/bin/Win64_Shipping_Client", "*.tmp");
@@ -91,14 +98,59 @@ namespace BetterExceptions
 			for(int i = 0; i < tmpFiles.Length; ++i)
 				File.Delete(tmpFiles[i]);
 		}
+
+		private void CompareAndInstall(Version givenVersion)
+		{
+			Version current = GetType().Assembly.GetName().Version;
+			if(current.CompareTo(givenVersion) == 0)
+				return; // already installed
+
+			if(!ServiceManager.TryGetService(out IUpdateHandler updateHandler))
+				return; // can't download requested
+
+			Version target = updateHandler.GetVersionList().FirstOrDefault(v => v.CompareTo(givenVersion) == 0);
+			if(target == null)
+			{
+				MBPopup.ShowSimpleAlertPopup(
+					"Unknown version!",
+					$"Version {givenVersion} isn't available! Please validate your 'config.dat'!",
+					"OK",
+					()=>{ });
+				return;
+			}
+
+			MBPopup.ShowSimplePopup(
+				"Install another version?",
+				$"Version {current.ToString(3)} installed but {givenVersion.ToString(3)} given in 'config.dat'. Do you wish to " + (target.CompareTo(current) > 0 ? "upgrade" : "downgrade") + " to the requested version?",
+				target.CompareTo(current) > 0 ? "Upgrade" : "Downgrade",
+				"Ignore",
+				()=>{
+					updateHandler.InstallVersion(target).ContinueWith((result) =>
+					{
+						if(result.Result)
+							MBPopup.ShowSimpleNotificationPopup("Successfully installed!", "BetterExceptions version {givenVersion.ToString(3)} installed! Please restart your game to apply the updates.", "OK", ()=>{});
+						else
+							MBPopup.ShowSimpleAlertPopup("Update failed!", "Failed to install version {givenVersion.ToString(3)} of BetterExceptions!", "OK", ()=>{});
+					});
+				},
+				()=>{ });
+		}
+
 		private void CheckForUpdates()
 		{
-			if( ServiceManager.TryGetService(out IConfigManager configManager) &&
+			if(	ServiceManager.TryGetService(out IConfigManager configManager) &&
 				configManager.TryGetConfigValue("selected_version", out string selectedVersion) &&
-				selectedVersion != "latest")
+				selectedVersion != "latest" &&
+				Version.TryParse(selectedVersion, out Version givenVersion))
+			{
+				CompareAndInstall(givenVersion);
 				return;
+			}
+
+			// Continue with installation of the latest version
 			if(!ServiceManager.TryGetService(out IUpdateHandler updateHandler))
 				return;
+
 			Version latest = updateHandler.GetLatestVersion();
 			if(GetType().Assembly.GetName().Version.CompareTo(latest) >= 0)
 				return;
@@ -120,9 +172,11 @@ namespace BetterExceptions
 				},
 				()=>{});
 		}
+
 		public override void OnInitialState()
 		{
 			bool abortInit = false;
+
 			while(!initialized && !abortInit)
 			{
 				MBPopup.ShowSimplePopup("Initialization fail!", "Failed to properly initialize BetterExceptions! Do you wish to try and reinitialize?", "Reinitialize", "Ignore", () =>
@@ -136,10 +190,12 @@ namespace BetterExceptions
 			}
 			Task.Run(CheckForUpdates);
 		}
+
 		protected override void OnSubModuleUnloaded()
 		{
 			DebugManager.Instance.UnhandledExceptionThrown -= ExceptionThrown;
 			DebugManager.Instance.DisableDebugMode();
+
 			ILogger logger = null;
 			if(ServiceManager.TryGetService(out IConfigManager configManager))
 			{
@@ -152,6 +208,7 @@ namespace BetterExceptions
 						logger.LogException(e);
 				}
 			}
+
 			if(logger != null || ServiceManager.TryGetService(out logger))
 			{
 				logger.Log($"BetterExceptions successfully terminated!");
